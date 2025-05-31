@@ -1,0 +1,15 @@
+include README.md
+include LICENSE
+include Cargo.toml
+include Cargo.lock
+include pyproject.toml
+recursive-include src *.rs
+recursive-include polars_indicator *.py *.pyi
+exclude example_supertrend.py
+exclude test_supertrend.py
+exclude run.py
+exclude build_wheel.py
+recursive-exclude target *
+recursive-exclude .venv *
+recursive-exclude .pytest_cache *
+recursive-exclude __pycache__ * 

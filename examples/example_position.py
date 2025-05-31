@@ -8,9 +8,7 @@ to clean trading signals and manage position IDs.
 
 import polars as pl
 from polars_indicator import (
-    clean_enex_position_ids,
-    clean_entries,
-    clean_exits,
+    clean_enex_position,
     reshape_position_id_array,
 )
 
@@ -57,13 +55,7 @@ def main():
 
     # 清理交易信號
     print("2. Cleaning trading signals...")
-    result = df.with_columns(
-        [
-            clean_entries("entry", "exit", True).alias("clean_entry"),
-            clean_exits("entry", "exit", True).alias("clean_exit"),
-            clean_enex_position_ids("entry", "exit", True).alias("position_id"),
-        ]
-    )
+    result = df.with_columns(clean_enex_position("entry", "exit", True).struct.unnest())
 
     print("Cleaned signals:")
     print(result)
@@ -72,11 +64,7 @@ def main():
     # 展示 entry_first=False 的情況
     print("3. Cleaning with entry_first=False...")
     result_exit_first = df.with_columns(
-        [
-            clean_entries("entry", "exit", False).alias("clean_entry"),
-            clean_exits("entry", "exit", False).alias("clean_exit"),
-            clean_enex_position_ids("entry", "exit", False).alias("position_id"),
-        ]
+        clean_enex_position("entry", "exit", False).struct.unnest()
     )
 
     print("Cleaned signals (exit first):")

@@ -60,7 +60,7 @@ df = pl.DataFrame(
 )
 
 # 計算 ATR (使用簡單的方法)
-df = df.lazy().with_columns(atr=plta.atr(timeperiod=7))
+df = df.lazy().with_columns(atr=plta.atr(timeperiod=12))
 
 # 使用 supertrend 函數 - 返回 4 個欄位
 result = df.with_columns(supertrend())

@@ -68,11 +68,7 @@ class TestPosition:
 
         result = df.with_columns(
             clean_result=clean_enex_position("entry", "exit", True)
-        ).with_columns(
-            entries_out=pl.col("clean_result").struct.field("entries_out"),
-            exits_out=pl.col("clean_result").struct.field("exits_out"),
-            positions_out=pl.col("clean_result").struct.field("positions_out"),
-        )
+        ).with_columns(pl.col("clean_result").struct.unnest())
 
         entries_out = result["entries_out"].to_list()
         exits_out = result["exits_out"].to_list()

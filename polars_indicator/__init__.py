@@ -16,7 +16,6 @@ LIB = Path(__file__).parent
 __all__ = [
     "pig_latinnify",
     "supertrend",
-    "supertrend_direction",
     "clean_enex_position",
     "reshape_position_id_array",
 ]
@@ -71,33 +70,6 @@ def supertrend(
     # atr_str = atr.meta.output_name()
 
     return st_struct.alias("supertrend")
-
-
-def supertrend_direction(
-    high: IntoExprColumn = pl.col("high"),
-    low: IntoExprColumn = pl.col("low"),
-    close: IntoExprColumn = pl.col("close"),
-    atr: IntoExprColumn = pl.col("atr"),
-    upper_multiplier: float = 2.0,
-    lower_multiplier: float = 2.0,
-) -> pl.Expr:
-    """
-    計算 SuperTrend 方向
-
-    Args:
-        high: 最高價序列
-        low: 最低價序列
-        close: 收盤價序列
-        atr: ATR 值序列
-        upper_multiplier: 上軌倍數，預設為 2.0
-        lower_multiplier: 下軌倍數，預設為 2.0
-
-    Returns:
-        SuperTrend 方向 (1 為看漲, -1 為看跌)
-    """
-    return supertrend(
-        high, low, close, atr, upper_multiplier, lower_multiplier
-    ).struct.field("direction")
 
 
 def clean_enex_position(

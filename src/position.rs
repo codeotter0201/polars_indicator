@@ -4,7 +4,7 @@ use pyo3_polars::derive::polars_expr;
 
 /// 清理進場和出場信號數組，處理交易的進場（entry）和出場（exit）信號
 /// 這個函數實際上返回三個 Series：entries_out, exits_out, positions_out
-/// 但由於 Polars 插件限制，我們只能返回一個 Series，所以我們返回 position_id
+/// 但由於 Polars 插件限制，我們只能返回一個 Series，所以我們返回 _position_id
 #[polars_expr(output_type=Int64)]
 fn clean_enex_position(inputs: &[Series]) -> PolarsResult<Series> {
     let entries = &inputs[0];
@@ -25,7 +25,7 @@ fn clean_enex_position(inputs: &[Series]) -> PolarsResult<Series> {
     let mut positions_out = Vec::with_capacity(len);
 
     let mut phase = -1i32; // -1: 初始, 1: 已進場, 0: 已出場
-    let mut position_id = -1i64;
+    let mut _position_id = -1i64;
 
     // 複製輸入陣列以便修改
     let mut entries_temp: Vec<bool> = (0..len)
@@ -47,23 +47,23 @@ fn clean_enex_position(inputs: &[Series]) -> PolarsResult<Series> {
         if entries_temp[i] {
             if phase == -1 || phase == 0 {
                 phase = 1;
-                position_id += 1;
-                positions_out.push(Some(position_id));
+                _position_id += 1;
+                positions_out.push(Some(_position_id));
             } else {
-                positions_out.push(Some(position_id));
+                positions_out.push(Some(_position_id));
             }
         } else if exits_temp[i] {
             // 出場信號處理
             if phase == 1 {
                 phase = 0;
-                positions_out.push(Some(position_id));
+                positions_out.push(Some(_position_id));
             } else {
                 positions_out.push(Some(-1));
             }
         } else {
             // 維持當前狀態
             if phase == 1 {
-                positions_out.push(Some(position_id));
+                positions_out.push(Some(_position_id));
             } else {
                 positions_out.push(Some(-1));
             }
@@ -73,24 +73,24 @@ fn clean_enex_position(inputs: &[Series]) -> PolarsResult<Series> {
     Ok(Int64Chunked::new("positions_out".into(), positions_out).into_series())
 }
 
-/// 從 trades 建立 position_id array
+/// 從 trades 建立 _position_id array
 #[polars_expr(output_type=Int64)]
-fn reshape_position_id_array(inputs: &[Series]) -> PolarsResult<Series> {
+fn reshape__position_id_array(inputs: &[Series]) -> PolarsResult<Series> {
     let ohlcv_lens = &inputs[0];
-    let position_id_arr = &inputs[1];
+    let _position_id_arr = &inputs[1];
     let entry_idx_arr = &inputs[2];
     let exit_idx_arr = &inputs[3];
 
     let ohlcv_lens_value = ohlcv_lens.i32()?.get(0).unwrap_or(0) as usize;
-    let position_id_ca: &Int64Chunked = position_id_arr.i64()?;
+    let _position_id_ca: &Int64Chunked = _position_id_arr.i64()?;
     let entry_idx_ca: &Int64Chunked = entry_idx_arr.i64()?;
     let exit_idx_ca: &Int64Chunked = exit_idx_arr.i64()?;
 
     let mut ret = vec![-1i64; ohlcv_lens_value];
 
-    for i in 0..position_id_ca.len() {
+    for i in 0.._position_id_ca.len() {
         if let (Some(pid), Some(entry_idx), Some(exit_idx)) = (
-            position_id_ca.get(i),
+            _position_id_ca.get(i),
             entry_idx_ca.get(i),
             exit_idx_ca.get(i),
         ) {
@@ -105,7 +105,7 @@ fn reshape_position_id_array(inputs: &[Series]) -> PolarsResult<Series> {
         }
     }
 
-    Ok(Int64Chunked::new("position_id".into(), ret).into_series())
+    Ok(Int64Chunked::new("_position_id".into(), ret).into_series())
 }
 
 /// 清理進場信號 - 輔助函數
@@ -129,7 +129,7 @@ fn clean_entries(inputs: &[Series]) -> PolarsResult<Series> {
     let mut entries_out = Vec::with_capacity(len);
 
     let mut phase = -1i32; // -1: 初始, 1: 已進場, 0: 已出場
-    let mut position_id = -1i64;
+    let mut _position_id = -1i64;
 
     // 複製輸入陣列以便修改
     let mut entries_temp: Vec<bool> = (0..len)
@@ -152,7 +152,7 @@ fn clean_entries(inputs: &[Series]) -> PolarsResult<Series> {
             if phase == -1 || phase == 0 {
                 phase = 1;
                 entries_out.push(Some(true));
-                position_id += 1;
+                _position_id += 1;
             } else {
                 entries_out.push(Some(false));
             }
@@ -188,7 +188,7 @@ fn clean_exits(inputs: &[Series]) -> PolarsResult<Series> {
     let mut exits_out = Vec::with_capacity(len);
 
     let mut phase = -1i32; // -1: 初始, 1: 已進場, 0: 已出場
-    let mut position_id = -1i64;
+    let mut _position_id = -1i64;
 
     // 複製輸入陣列以便修改
     let mut entries_temp: Vec<bool> = (0..len)
@@ -210,7 +210,7 @@ fn clean_exits(inputs: &[Series]) -> PolarsResult<Series> {
         if entries_temp[i] {
             if phase == -1 || phase == 0 {
                 phase = 1;
-                position_id += 1;
+                _position_id += 1;
             }
         }
 

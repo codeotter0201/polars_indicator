@@ -13,6 +13,16 @@ if TYPE_CHECKING:
 
 LIB = Path(__file__).parent
 
+__all__ = [
+    "pig_latinnify",
+    "supertrend",
+    "supertrend_direction",
+    "clean_enex_position_ids",
+    "clean_entries",
+    "clean_exits",
+    "reshape_position_id_array",
+]
+
 
 def pig_latinnify(expr: IntoExprColumn) -> pl.Expr:
     return register_plugin_function(
@@ -23,66 +33,55 @@ def pig_latinnify(expr: IntoExprColumn) -> pl.Expr:
     )
 
 
-def atr(
-    high: IntoExprColumn,
-    low: IntoExprColumn,
-    close: IntoExprColumn,
-    period: int = 14,
-) -> pl.Expr:
-    """
-    計算 Average True Range (ATR)
-
-    Args:
-        high: 最高價序列
-        low: 最低價序列
-        close: 收盤價序列
-        period: ATR 計算期間，預設為 14
-
-    Returns:
-        ATR 值的 Polars 表達式
-    """
-    return register_plugin_function(
-        args=[high, low, close, pl.lit(period)],
-        plugin_path=LIB,
-        function_name="atr",
-        is_elementwise=False,
-    )
-
-
 def supertrend(
-    high: IntoExprColumn,
-    low: IntoExprColumn,
-    close: IntoExprColumn,
-    atr_period: int = 14,
-    multiplier: float = 3.0,
+    high: IntoExprColumn = pl.col("high"),
+    low: IntoExprColumn = pl.col("low"),
+    close: IntoExprColumn = pl.col("close"),
+    atr: IntoExprColumn = pl.col("atr"),
+    upper_multiplier: float = 2.0,
+    lower_multiplier: float = 2.0,
 ) -> pl.Expr:
     """
-    計算 SuperTrend 趨勢線
+    計算 SuperTrend 指標
 
     Args:
         high: 最高價序列
         low: 最低價序列
         close: 收盤價序列
-        atr_period: ATR 計算期間，預設為 14
-        multiplier: ATR 倍數，預設為 3.0
+        atr: ATR 值序列
+        upper_multiplier: 上軌倍數，預設為 2.0
+        lower_multiplier: 下軌倍數，預設為 2.0
 
     Returns:
-        SuperTrend 趨勢線值
+        包含 direction, long, short, trend 四個字段的結構體表達式
     """
-    return register_plugin_function(
-        args=[high, low, close, pl.lit(atr_period), pl.lit(multiplier)],
+    # 註冊插件函數以獲取結構
+    st_struct = register_plugin_function(
+        args=[
+            high,
+            low,
+            close,
+            atr,
+            pl.lit(upper_multiplier),
+            pl.lit(lower_multiplier),
+        ],
         plugin_path=LIB,
         function_name="supertrend",
         is_elementwise=False,
     )
 
+    # atr_str = atr.meta.output_name()
+
+    return st_struct.alias("supertrend")
+
 
 def supertrend_direction(
-    high: IntoExprColumn,
-    low: IntoExprColumn,
-    close: IntoExprColumn,
-    atr_period: int = 14,
-    multiplier: float = 3.0,
+    high: IntoExprColumn = pl.col("high"),
+    low: IntoExprColumn = pl.col("low"),
+    close: IntoExprColumn = pl.col("close"),
+    atr: IntoExprColumn = pl.col("atr"),
+    upper_multiplier: float = 2.0,
+    lower_multiplier: float = 2.0,
 ) -> pl.Expr:
     """
     計算 SuperTrend 方向
@@ -91,18 +90,16 @@ def supertrend_direction(
         high: 最高價序列
         low: 最低價序列
         close: 收盤價序列
-        atr_period: ATR 計算期間，預設為 14
-        multiplier: ATR 倍數，預設為 3.0
+        atr: ATR 值序列
+        upper_multiplier: 上軌倍數，預設為 2.0
+        lower_multiplier: 下軌倍數，預設為 2.0
 
     Returns:
         SuperTrend 方向 (1 為看漲, -1 為看跌)
     """
-    return register_plugin_function(
-        args=[high, low, close, pl.lit(atr_period), pl.lit(multiplier)],
-        plugin_path=LIB,
-        function_name="supertrend_direction",
-        is_elementwise=False,
-    )
+    return supertrend(
+        high, low, close, atr, upper_multiplier, lower_multiplier
+    ).struct.field("direction")
 
 
 def clean_enex_position_ids(

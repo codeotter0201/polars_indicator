@@ -13,7 +13,6 @@
 ## 安裝
 
 ```bash
- polars as pl
 pip install polars-indicator
 
 # 開發環境安裝
@@ -26,23 +25,41 @@ uv run maturin develop
 
 ```python
 import polars as pl
-from polars_indicator import atr, supertrend, supertrend_direction
+import polars_talib as plta
+from polars_indicator import supertrend, supertrend_direction
 
 # 創建市場數據
 df = pl.DataFrame({
-    "high": [102.0, 103.5, 104.2, 103.8, 105.1],
-    "low": [100.2, 101.8, 102.1, 101.9, 103.2],
-    "close": [101.5, 102.8, 103.1, 102.9, 104.2],
+    "high": [102.0, 103.5, 104.2, 103.8, 105.1, 106.3, 105.9, 107.2, 108.1, 107.8, 109.5, 108.9, 110.2, 111.0, 109.8],
+    "low": [100.2, 101.8, 102.1, 101.9, 103.2, 104.5, 103.8, 105.1, 106.2, 105.9, 107.1, 106.8, 108.5, 109.2, 107.9],
+    "close": [101.5, 102.8, 103.1, 102.9, 104.2, 105.8, 104.9, 106.5, 107.3, 106.8, 108.9, 107.5, 109.8, 110.1, 108.7],
 })
 
-# 計算 SuperTrend 指標
+# 先計算 ATR，然後計算 SuperTrend 指標
 result = df.with_columns([
-    atr("high", "low", "close", 14).alias("atr"),
-    supertrend("high", "low", "close", 14, 3.0).alias("supertrend"),
-    supertrend_direction("high", "low", "close", 14, 3.0).alias("direction"),
+    plta.atr(timeperiod=14).alias("atr"),
+]).with_columns([
+    supertrend().alias("supertrend"),
+    supertrend_direction().alias("direction"),
 ])
 
 print(result)
+
+# 也可以使用自訂參數
+result_custom = df.with_columns([
+    plta.atr(timeperiod=14).alias("atr"),
+]).with_columns([
+    supertrend(
+        pl.col("high"),
+        pl.col("low"),
+        pl.col("close"),
+        pl.col("atr"),
+        upper_multiplier=2.0,
+        lower_multiplier=2.0
+    ).alias("supertrend"),
+])
+
+print(result_custom)
 ```
 
 ### 交易信號處理
@@ -74,9 +91,8 @@ print(result)
 
 ### 技術指標
 
-- `atr(high, low, close, period=14)` - Average True Range
-- `supertrend(high, low, close, atr_period=14, multiplier=3.0)` - SuperTrend 趨勢線
-- `supertrend_direction(high, low, close, atr_period=14, multiplier=3.0)` - SuperTrend 方向
+- `supertrend(high, low, close, atr, upper_multiplier=2.0, lower_multiplier=2.0)` - SuperTrend 結構體（包含 direction, long, short, trend）
+- `supertrend_direction(high, low, close, atr, upper_multiplier=2.0, lower_multiplier=2.0)` - SuperTrend 方向
 
 ### 交易信號處理
 
@@ -91,6 +107,13 @@ print(result)
 
 ```bash
 uv run python example_position.py
+```
+
+### SuperTrend 範例
+
+```bash
+# 查看範例中的 SuperTrend 使用方式
+uv run python examples/example_supertrend.py
 ```
 
 ## 開發

@@ -26,7 +26,7 @@ uv run maturin develop
 ```python
 import polars as pl
 import polars_talib as plta
-from polars_indicator import supertrend, supertrend_direction
+from polars_indicator import supertrend
 
 # 創建市場數據
 df = pl.DataFrame({
@@ -40,10 +40,19 @@ result = df.with_columns([
     plta.atr(timeperiod=14).alias("atr"),
 ]).with_columns([
     supertrend().alias("supertrend"),
-    supertrend_direction().alias("direction"),
 ])
 
 print(result)
+
+# 從結構體中提取字段
+expanded = result.with_columns([
+    pl.col("supertrend").struct.field("direction").alias("direction"),
+    pl.col("supertrend").struct.field("long").alias("long"),
+    pl.col("supertrend").struct.field("short").alias("short"),
+    pl.col("supertrend").struct.field("trend").alias("trend"),
+])
+
+print(expanded)
 
 # 也可以使用自訂參數
 result_custom = df.with_columns([
@@ -66,9 +75,8 @@ print(result_custom)
 
 ```python
 from polars_indicator import (
-    clean_entries,
-    clean_exits,
-    clean_enex_position_ids
+    clean_enex_position,
+    reshape_position_id_array,
 )
 
 # 創建交易信號
@@ -77,42 +85,75 @@ df = pl.DataFrame({
     "exit": [False, False, False, True, True],
 })
 
-# 清理信號並生成持倉ID
+# 清理信號並生成持倉ID - 返回結構體
 result = df.with_columns([
-    clean_entries("entry", "exit", True).alias("clean_entry"),
-    clean_exits("entry", "exit", True).alias("clean_exit"),
-    clean_enex_position_ids("entry", "exit", True).alias("position_id"),
+    clean_enex_position("entry", "exit", True).alias("cleaned"),
 ])
 
-print(result)
+# 從結構體中提取字段
+expanded = result.with_columns([
+    pl.col("cleaned").struct.field("entries_out").alias("clean_entry"),
+    pl.col("cleaned").struct.field("exits_out").alias("clean_exit"),
+    pl.col("cleaned").struct.field("positions_out").alias("position_id"),
+])
+
+print(expanded)
+
+# 或直接展開結構體
+result_unnested = df.with_columns(
+    clean_enex_position("entry", "exit", True).struct.unnest()
+)
+
+print(result_unnested)
+```
+
+### 重塑持倉數組
+
+```python
+# 創建交易數據
+trades_df = pl.DataFrame({
+    "trade_id": [0, 1, 2],
+    "entry_idx": [1, 6, 15],
+    "exit_idx": [3, 8, 18],
+})
+
+# 將交易數據重塑為與 OHLCV 數據長度一致的位置ID數組
+position_array = trades_df.select(
+    reshape_position_id_array(
+        20,  # OHLCV 數據長度
+        "trade_id",
+        "entry_idx",
+        "exit_idx"
+    ).alias("position_array")
+)
+
+print(position_array)
 ```
 
 ## 可用函數
 
 ### 技術指標
 
-- `supertrend(high, low, close, atr, upper_multiplier=2.0, lower_multiplier=2.0)` - SuperTrend 結構體（包含 direction, long, short, trend）
-- `supertrend_direction(high, low, close, atr, upper_multiplier=2.0, lower_multiplier=2.0)` - SuperTrend 方向
+- `supertrend(high, low, close, atr, upper_multiplier=2.0, lower_multiplier=2.0)` - 返回包含 direction, long, short, trend 四個字段的結構體
 
 ### 交易信號處理
 
-- `clean_entries(entries, exits, entry_first=True)` - 清理進場信號
-- `clean_exits(entries, exits, entry_first=True)` - 清理出場信號
-- `clean_enex_position_ids(entries, exits, entry_first=True)` - 生成持倉 ID
-- `reshape_position_id_array(ohlcv_lens, position_id_arr, entry_idx_arr, exit_idx_arr)` - 重塑持倉數組
+- `clean_enex_position(entries, exits, entry_first=True)` - 清理進出場信號，返回包含 entries_out, exits_out, positions_out 三個字段的結構體
+- `reshape_position_id_array(ohlcv_lens, position_id_arr, entry_idx_arr, exit_idx_arr)` - 將交易數據重塑為與 OHLCV 數據長度一致的位置 ID 數組
 
 ## 範例
 
-查看 `example_position.py` 了解完整的使用範例。
+查看 `examples/example_position.py` 了解完整的持倉處理使用範例：
 
 ```bash
-uv run python example_position.py
+uv run python examples/example_position.py
 ```
 
 ### SuperTrend 範例
 
+查看 `examples/example_supertrend.py` 了解 SuperTrend 指標的使用方式：
+
 ```bash
-# 查看範例中的 SuperTrend 使用方式
 uv run python examples/example_supertrend.py
 ```
 

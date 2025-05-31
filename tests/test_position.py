@@ -1,8 +1,6 @@
 import polars as pl
 from polars_indicator import (
-    clean_enex_position_ids,
-    clean_entries,
-    clean_exits,
+    clean_enex_position,
     reshape_position_id_array,
 )
 
@@ -18,9 +16,11 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            entries_out=clean_entries("entry", "exit", True),
-            exits_out=clean_exits("entry", "exit", True),
-            positions_out=clean_enex_position_ids("entry", "exit", True),
+            clean_result=clean_enex_position("entry", "exit", True)
+        ).with_columns(
+            entries_out=pl.col("clean_result").struct.field("entries_out"),
+            exits_out=pl.col("clean_result").struct.field("exits_out"),
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         # 驗證結果
@@ -42,9 +42,11 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            entries_out=clean_entries("entry", "exit", True),
-            exits_out=clean_exits("entry", "exit", True),
-            positions_out=clean_enex_position_ids("entry", "exit", True),
+            clean_result=clean_enex_position("entry", "exit", True)
+        ).with_columns(
+            entries_out=pl.col("clean_result").struct.field("entries_out"),
+            exits_out=pl.col("clean_result").struct.field("exits_out"),
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         entries_out = result["entries_out"].to_list()
@@ -65,9 +67,11 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            entries_out=clean_entries("entry", "exit", True),
-            exits_out=clean_exits("entry", "exit", True),
-            positions_out=clean_enex_position_ids("entry", "exit", True),
+            clean_result=clean_enex_position("entry", "exit", True)
+        ).with_columns(
+            entries_out=pl.col("clean_result").struct.field("entries_out"),
+            exits_out=pl.col("clean_result").struct.field("exits_out"),
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         entries_out = result["entries_out"].to_list()
@@ -88,9 +92,11 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            entries_out=clean_entries("entry", "exit", False),
-            exits_out=clean_exits("entry", "exit", False),
-            positions_out=clean_enex_position_ids("entry", "exit", False),
+            clean_result=clean_enex_position("entry", "exit", False)
+        ).with_columns(
+            entries_out=pl.col("clean_result").struct.field("entries_out"),
+            exits_out=pl.col("clean_result").struct.field("exits_out"),
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         entries_out = result["entries_out"].to_list()
@@ -133,7 +139,9 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            positions_out=clean_enex_position_ids("entry", "exit", True),
+            clean_result=clean_enex_position("entry", "exit", True)
+        ).with_columns(
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         positions_out = result["positions_out"].to_list()
@@ -171,9 +179,11 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            entries_out=clean_entries("entry", "exit", True),
-            exits_out=clean_exits("entry", "exit", True),
-            positions_out=clean_enex_position_ids("entry", "exit", True),
+            clean_result=clean_enex_position("entry", "exit", True)
+        ).with_columns(
+            entries_out=pl.col("clean_result").struct.field("entries_out"),
+            exits_out=pl.col("clean_result").struct.field("exits_out"),
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         entries_out = result["entries_out"].to_list()
@@ -217,9 +227,11 @@ class TestPosition:
         )
 
         result = df.with_columns(
-            entries_out=clean_entries("entry", "exit", True),
-            exits_out=clean_exits("entry", "exit", True),
-            positions_out=clean_enex_position_ids("entry", "exit", True),
+            clean_result=clean_enex_position("entry", "exit", True)
+        ).with_columns(
+            entries_out=pl.col("clean_result").struct.field("entries_out"),
+            exits_out=pl.col("clean_result").struct.field("exits_out"),
+            positions_out=pl.col("clean_result").struct.field("positions_out"),
         )
 
         assert result.height == 0

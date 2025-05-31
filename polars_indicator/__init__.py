@@ -17,9 +17,7 @@ __all__ = [
     "pig_latinnify",
     "supertrend",
     "supertrend_direction",
-    "clean_enex_position_ids",
-    "clean_entries",
-    "clean_exits",
+    "clean_enex_position",
     "reshape_position_id_array",
 ]
 
@@ -102,13 +100,13 @@ def supertrend_direction(
     ).struct.field("direction")
 
 
-def clean_enex_position_ids(
+def clean_enex_position(
     entries: IntoExprColumn,
     exits: IntoExprColumn,
     entry_first: bool = True,
 ) -> pl.Expr:
     """
-    清理進場和出場信號數組，返回位置ID
+    清理進場和出場信號數組，返回包含清理後信號和位置ID的結構體
 
     Args:
         entries: 進場信號數組，可能包含連續的 True 值
@@ -116,62 +114,14 @@ def clean_enex_position_ids(
         entry_first: 當進場和出場信號同時出現時的優先順序，預設為 True
 
     Returns:
-        每個時間點對應的位置ID
+        包含 entries_out, exits_out, positions_out 三個字段的結構體表達式
     """
     return register_plugin_function(
         args=[entries, exits, pl.lit(entry_first)],
         plugin_path=LIB,
         function_name="clean_enex_position",
         is_elementwise=False,
-    )
-
-
-def clean_entries(
-    entries: IntoExprColumn,
-    exits: IntoExprColumn,
-    entry_first: bool = True,
-) -> pl.Expr:
-    """
-    清理進場信號
-
-    Args:
-        entries: 進場信號數組，可能包含連續的 True 值
-        exits: 出場信號數組，可能包含連續的 True 值
-        entry_first: 當進場和出場信號同時出現時的優先順序，預設為 True
-
-    Returns:
-        清理後的進場信號
-    """
-    return register_plugin_function(
-        args=[entries, exits, pl.lit(entry_first)],
-        plugin_path=LIB,
-        function_name="clean_entries",
-        is_elementwise=False,
-    )
-
-
-def clean_exits(
-    entries: IntoExprColumn,
-    exits: IntoExprColumn,
-    entry_first: bool = True,
-) -> pl.Expr:
-    """
-    清理出場信號
-
-    Args:
-        entries: 進場信號數組，可能包含連續的 True 值
-        exits: 出場信號數組，可能包含連續的 True 值
-        entry_first: 當進場和出場信號同時出現時的優先順序，預設為 True
-
-    Returns:
-        清理後的出場信號
-    """
-    return register_plugin_function(
-        args=[entries, exits, pl.lit(entry_first)],
-        plugin_path=LIB,
-        function_name="clean_exits",
-        is_elementwise=False,
-    )
+    ).alias("clean_enex_position")
 
 
 def reshape_position_id_array(

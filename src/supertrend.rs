@@ -164,3 +164,73 @@ fn supertrend_output_type(_input_fields: &[Field]) -> PolarsResult<Field> {
     ];
     Ok(Field::new("supertrend".into(), DataType::Struct(fields)))
 }
+
+0.
+!![user defined strategy]
+*strategy
+
+!![user defined blueprint]
+*blueprint: dict[
+    triggers: list[*trigger_obj[*mask_obj]],
+]
+
+1.
+![quote service]
+(input: *instrument, *indicators)
+ohlcvs: dict[instrument_freq_key, pl.DataFrame[indicators_exprs]]
+
+2.
+![stimulate service]
+[HFQ data: collect all indicators into one HFQ DataFrame(1m)]
+(input: ohlcv_1m, ohlcv_5m_with_indicators)
+create full ts, join 1m and 5m, drop both ts is null, fill forward 5m null data,
+idx, is_gap, volatility, {other indicators: atr, atr_q3, hour, day}
+{output: ohlcv_1m_with_indicators:: pl.LazyFrame @collect and lazy}
+
+3.
+[signal stimulate]
+(input: *strategy)
+execute enex expr
+{output: ohlcv_1m_with_indicators_with_primary_entry_exit_price_idx}
+
+4.
+[intrade context]
+(input: entry expr, exit expr, direction)
+direction
+primary_status
+primary_entry_price
+primary_entry_idx
+primary_entry_price
+primary_entry_idx
+primary_highest_high_since_entry
+primary_lowest_low_since_entry
+primary_holding_idx
+
+5.
+[advanced entry]
+(advanced_entry_triggers ... etc)
+{output}
+advanced_entry_price
+advanced_entry_idx
+advanced_entry_reason
+advanced_status
+advanced_highest_high_since_entry
+advanced_lowest_low_since_entry
+advanced_holding_idx
+
+6.
+[advanced exit]
+advanced_exit_price(sl, tp, ts, be)
+advanced_exit_mask
+
+-.
+[performance report]
+mae mfe report (each trade performance)
+user set trigger reference by this report
+
+strategy performance report (pnl, sharpe, drawdown, etc)
+user set risk ratio reference by this report
+
+signal order
+primary trade + trigger + mask = trade task
+trade task is a plan for user to execute trade
